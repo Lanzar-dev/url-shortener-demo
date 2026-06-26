@@ -32,6 +32,24 @@ A simple URL shortener built with FastAPI, SQLite, and a vanilla HTML/CSS/JS fro
 - `tests/test_main.py`: test suite
 - `pyproject.toml`: dependencies and project metadata
 
+## PR Troubleshooting
+
+If GitHub shows:
+
+- `Head sha can't be blank`
+- `Base sha can't be blank`
+- `No commits between main and <feature-branch>`
+- `Base ref must be a branch`
+
+then the base branch (`main`) does not exist in the remote repository yet. In this repository, the remote currently has feature branches only, so opening a PR into `main` fails until `main` is created and pushed.
+
+Create/push `main` once, then open the PR again:
+
+```bash
+git checkout -b main
+git push -u origin main
+```
+
 ## Installation
 
 ```bash
