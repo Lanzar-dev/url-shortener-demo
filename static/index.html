@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-main: #222222;
+      --text-muted: #555555;
+      --border: #cccccc;
+      --accent: #4f6ef7;
+      --accent-hover: #3a57d4;
+      --button-disabled: #a0aec0;
+      --result-bg: #eef2ff;
+      --lookup-bg: #eef8ef;
+      --error-bg: #fff0f0;
+      --error-text: #c0392b;
+      --shadow: 0 2px 12px rgba(0, 0, 0, .1);
+    }
+
+    [data-theme="dark"] {
+      --bg: #111827;
+      --card-bg: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #d1d5db;
+      --border: #4b5563;
+      --accent: #7c9bff;
+      --accent-hover: #6b87df;
+      --button-disabled: #6b7280;
+      --result-bg: #273249;
+      --lookup-bg: #263831;
+      --error-bg: #4a2a2a;
+      --error-text: #fda4af;
+      --shadow: 0 6px 20px rgba(0, 0, 0, .35);
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 4rem 1rem;
+      min-height: 100vh;
+      transition: background .2s ease, color .2s ease;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      width: 100%;
+      max-width: 520px;
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+
+    h1 { font-size: 1.4rem; margin-bottom: 1.25rem; color: var(--text-main); }
+
+    form { display: flex; gap: .5rem; }
+
+    input[type="url"],
+    input[type="text"] {
+      flex: 1;
+      padding: .55rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      color: var(--text-main);
+      background: var(--card-bg);
+    }
+    input[type="url"]:focus,
+    input[type="text"]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+    button {
+      padding: .55rem 1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { background: var(--button-disabled); cursor: not-allowed; }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 10;
+      padding: .45rem .75rem;
+      font-size: .9rem;
+    }
+
+    #result {
+      display: none;
+      margin-top: 1.25rem;
+      padding: .85rem 1rem;
+      background: var(--result-bg);
+      border-radius: 6px;
+      word-break: break-all;
+    }
+    #result p { font-size: .85rem; color: var(--text-muted); margin-bottom: .35rem; }
+    #result a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    #result a:hover { text-decoration: underline; }
+
+    #error {
+      display: none;
+      margin-top: 1.25rem;
+      padding: .75rem 1rem;
+      background: var(--error-bg);
+      border-radius: 6px;
+      color: var(--error-text);
+      font-size: .9rem;
+    }
+
+    .section-title {
+      font-size: .95rem;
+      color: var(--text-main);
+      margin: 1.5rem 0 .6rem;
+      font-weight: 600;
+    }
+
+    #lookup-result {
+      display: none;
+      margin-top: .85rem;
+      padding: .85rem 1rem;
+      background: var(--lookup-bg);
+      border-radius: 6px;
+      word-break: break-all;
+    }
+    #lookup-result p { font-size: .85rem; color: var(--text-muted); margin-bottom: .35rem; }
+    #lookup-result a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    #lookup-result a:hover { text-decoration: underline; }
+
+    #lookup-error {
+      display: none;
+      margin-top: .85rem;
+      padding: .75rem 1rem;
+      background: var(--error-bg);
+      border-radius: 6px;
+      color: var(--error-text);
+      font-size: .9rem;
+    }
+
+    .table-wrap {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: var(--result-bg);
+      padding: .65rem .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: .65rem .75rem;
+      font-size: .92rem;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .code-cell {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .table-actions {
+      margin-top: .65rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .clear-btn {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: .45rem .7rem;
+      font-size: .85rem;
+    }
+
+    .clear-btn:hover {
+      background: var(--result-bg);
+    }
+  </style>
+</head>
+<body>
+  <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">Dark mode</button>
+
+  <div class="card">
+    <h1>URL Shortener</h1>
+
+    <form id="form">
+      <input
+        type="url"
+        id="url-input"
+        placeholder="https://example.com/very/long/url"
+        required
+        autocomplete="off"
+      />
+      <button type="submit" id="submit-btn">Shorten</button>
+    </form>
+
+    <div id="result">
+      <p>Your shortened link:</p>
+      <a id="short-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+    </div>
+
+    <div id="error"></div>
+
+    <p class="section-title">Lookup original URL</p>
+
+    <form id="lookup-form">
+      <input
+        type="text"
+        id="code-input"
+        placeholder="Paste short code or short URL"
+        required
+        autocomplete="off"
+      />
+      <button type="submit" id="lookup-btn">Lookup</button>
+    </form>
+
+    <div id="lookup-result">
+      <p>Original URL:</p>
+      <a id="original-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+    </div>
+
+    <div id="lookup-error"></div>
+
+    <p class="section-title">Encoded / Decoded Output Table</p>
+    <div class="table-wrap" role="region" aria-label="URL and Base62 output table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Original URL</th>
+            <th scope="col">Base62 Code</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr id="history-empty-row">
+            <td class="empty-state" colspan="2">No output yet. Shorten or lookup a URL to see rows here.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-actions">
+      <button type="button" id="clear-history-btn" class="clear-btn">Clear History</button>
+    </div>
+  </div>
+
+  <script>
+    const form      = document.getElementById('form');
+    const input     = document.getElementById('url-input');
+    const btn       = document.getElementById('submit-btn');
+    const resultDiv = document.getElementById('result');
+    const shortLink = document.getElementById('short-link');
+    const errorDiv  = document.getElementById('error');
+
+    const lookupForm       = document.getElementById('lookup-form');
+    const codeInput        = document.getElementById('code-input');
+    const lookupBtn        = document.getElementById('lookup-btn');
+    const lookupResultDiv  = document.getElementById('lookup-result');
+    const originalLink     = document.getElementById('original-link');
+    const lookupErrorDiv   = document.getElementById('lookup-error');
+    const themeToggle      = document.getElementById('theme-toggle');
+    const themeKey         = 'theme';
+    const historyKey       = 'base62-history';
+    const historyBody      = document.getElementById('history-body');
+    const clearHistoryBtn  = document.getElementById('clear-history-btn');
+
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem(historyKey);
+        if (!raw) return [];
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed.filter((item) => (
+          item &&
+          typeof item.originalUrl === 'string' &&
+          typeof item.base62Code === 'string'
+        ));
+      } catch {
+        return [];
+      }
+    }
+
+    function setHistory(history) {
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    }
+
+    function renderHistoryRows(history) {
+      historyBody.innerHTML = '';
+
+      if (!history.length) {
+        const row = document.createElement('tr');
+        row.id = 'history-empty-row';
+
+        const cell = document.createElement('td');
+        cell.className = 'empty-state';
+        cell.colSpan = 2;
+        cell.textContent = 'No output yet. Shorten or lookup a URL to see rows here.';
+
+        row.appendChild(cell);
+        historyBody.appendChild(row);
+        return;
+      }
+
+      history.forEach(({ originalUrl, base62Code }) => {
+        const row = document.createElement('tr');
+        const originalCell = document.createElement('td');
+        const codeCell = document.createElement('td');
+
+        originalCell.textContent = originalUrl;
+        codeCell.textContent = base62Code;
+        codeCell.className = 'code-cell';
+
+        row.appendChild(originalCell);
+        row.appendChild(codeCell);
+        historyBody.appendChild(row);
+      });
+    }
+
+    function appendHistoryRow(originalUrl, base62Code) {
+      const history = getHistory();
+      history.unshift({ originalUrl, base62Code });
+      setHistory(history);
+      renderHistoryRows(history);
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+    }
+
+    const savedTheme = localStorage.getItem(themeKey);
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      applyTheme(savedTheme);
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem(themeKey, next);
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+      setHistory([]);
+      renderHistoryRows([]);
+    });
+
+    renderHistoryRows(getHistory());
+
+    function extractCode(value) {
+      const text = value.trim();
+      if (!text) return '';
+
+      try {
+        const parsed = new URL(text);
+        const fromPath = parsed.pathname.split('/').filter(Boolean).pop() || '';
+        return fromPath;
+      } catch {
+        const parts = text.split('/').filter(Boolean);
+        return parts.length ? parts[parts.length - 1] : text;
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultDiv.style.display = 'none';
+      errorDiv.style.display  = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Shortening…';
+
+      try {
+        const res = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: input.value.trim() }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail ?? `Server error ${res.status}`);
+        }
+
+        const { short_url, short_code } = await res.json();
+        shortLink.href        = short_url;
+        shortLink.textContent = short_url;
+        resultDiv.style.display = 'block';
+        appendHistoryRow(input.value.trim(), short_code);
+        input.value = '';
+      } catch (err) {
+        errorDiv.textContent    = err.message;
+        errorDiv.style.display  = 'block';
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Shorten';
+      }
+    });
+
+    lookupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      lookupResultDiv.style.display = 'none';
+      lookupErrorDiv.style.display  = 'none';
+      lookupBtn.disabled = true;
+      lookupBtn.textContent = 'Looking up...';
+
+      try {
+        const code = extractCode(codeInput.value);
+        if (!code) {
+          throw new Error('Please enter a short code or short URL.');
+        }
+
+        const res = await fetch(`/lookup/${encodeURIComponent(code)}`);
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail ?? `Server error ${res.status}`);
+        }
+
+        const { url } = await res.json();
+        originalLink.href = url;
+        originalLink.textContent = url;
+        lookupResultDiv.style.display = 'block';
+        appendHistoryRow(url, code);
+        codeInput.value = '';
+      } catch (err) {
+        lookupErrorDiv.textContent = err.message;
+        lookupErrorDiv.style.display = 'block';
+      } finally {
+        lookupBtn.disabled = false;
+        lookupBtn.textContent = 'Lookup';
+      }
+    });
+  </script>
+</body>
+</html>
