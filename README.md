@@ -1,6 +1,6 @@
 # URL Shortener Demo
 
-A simple URL shortener built with FastAPI, SQLite, and a vanilla HTML/CSS/JS frontend.
+A simple URL shortener built with FastAPI, SQLite, and a vanilla HTML/CSS/JS frontend, with a single-file Python backend.
 
 ## Features
 
