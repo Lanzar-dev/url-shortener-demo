@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "./.github/hooks/format-prettier.sh",
+        "description": "Auto-format Python files with ruff after tool use"
+      }
+    ]
+  }
+}
