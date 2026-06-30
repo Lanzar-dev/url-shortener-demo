@@ -40,7 +40,9 @@ def test_shorten_returns_short_code_and_url(client: TestClient):
 
 
 def test_lookup_returns_original_url_json(client: TestClient):
-    create_response = client.post("/shorten", json={"url": "https://example.com/lookup"})
+    create_response = client.post(
+        "/shorten", json={"url": "https://example.com/lookup"}
+    )
     code = create_response.json()["short_code"]
 
     lookup_response = client.get(f"/lookup/{code}")
@@ -57,7 +59,9 @@ def test_lookup_returns_404_for_missing_code(client: TestClient):
 
 
 def test_redirect_endpoint_redirects_to_original_url(client: TestClient):
-    create_response = client.post("/shorten", json={"url": "https://example.com/redirect"})
+    create_response = client.post(
+        "/shorten", json={"url": "https://example.com/redirect"}
+    )
     code = create_response.json()["short_code"]
 
     redirect_response = client.get(f"/{code}", follow_redirects=False)

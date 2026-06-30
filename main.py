@@ -124,9 +124,7 @@ def get_original_url_by_code(code: str) -> str:
 async def shorten(body: ShortenRequest, request: Request):
     """Insert the original URL and return a base62 short code."""
     with get_db() as conn:
-        cursor = conn.execute(
-            "INSERT INTO urls (original) VALUES (?)", (body.url,)
-        )
+        cursor = conn.execute("INSERT INTO urls (original) VALUES (?)", (body.url,))
         conn.commit()
         row_id: int = cursor.lastrowid  # type: ignore[assignment]
 

@@ -24,6 +24,7 @@ A simple URL shortener built with FastAPI, SQLite, and a vanilla HTML/CSS/JS fro
 - Uvicorn
 - Pytest + TestClient + httpx
 - Dependency manager: `uv`
+- Code formatter: `ruff`
 
 ## Project Layout
 
@@ -31,6 +32,8 @@ A simple URL shortener built with FastAPI, SQLite, and a vanilla HTML/CSS/JS fro
 - `static/index.html`: frontend UI and client logic
 - `tests/test_main.py`: test suite
 - `pyproject.toml`: dependencies and project metadata
+- `.github/hooks/format-prettier.sh`: post-tool ruff formatter hook script
+- `.github/hooks/post-tool-prettier.json`: agent hook configuration
 
 ## Installation
 
@@ -56,6 +59,16 @@ Run a single test:
 
 ```bash
 uv run pytest tests/test_main.py::test_shorten_returns_short_code_and_url -v
+```
+
+## Code Formatting
+
+[`ruff`](https://docs.astral.sh/ruff/) is used to format Python files. It is installed as a dev dependency and runs automatically via a post-tool agent hook after every file edit.
+
+To format manually:
+
+```bash
+uv run ruff format .
 ```
 
 ## API Reference
